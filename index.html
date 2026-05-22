@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ダイエットトラッカー 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f0f4f8;
+  --card: #ffffff;
+  --card2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --muted: #64748b;
+  --green: #16a34a;
+  --yellow: #d97706;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --p1: #7c3aed;
+  --p2: #2563eb;
+  --p3: #db2777;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+header h1 { font-size: 17px; font-weight: 700; }
+
+.hbadge {
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.hb-before { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+.hb-p1 { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; }
+.hb-p2 { background: #dbeafe; color: #1d4ed8; border: 1px solid #93c5fd; }
+.hb-p3 { background: #fce7f3; color: #be185d; border: 1px solid #f9a8d4; }
+.hb-done { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+
+nav {
+  display: flex;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.tab-btn.active { color: var(--text); border-bottom-color: var(--blue); }
+
+.tab-pane { display: none; padding: 16px; max-width: 620px; margin: 0 auto; }
+.tab-pane.active { display: block; }
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+.stat-label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+.stat-val { font-size: 22px; font-weight: 700; line-height: 1.1; }
+.stat-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* Progress */
+.prog-bar { background: var(--card2); border-radius: 6px; height: 8px; overflow: hidden; margin: 8px 0; }
+.prog-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg,#4f7af8,#a78bfa); transition: width .5s; }
+
+/* Input */
+.wi-row { display: flex; gap: 10px; align-items: center; }
+input[type="number"] {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 20px;
+  padding: 10px 14px;
+  width: 110px;
+  font-weight: 600;
+}
+input[type="number"]:focus { outline: none; border-color: var(--blue); }
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-primary:hover { background: #2563eb; }
+
+/* Tasks */
+.task-row {
+  display: flex;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.task-row:last-child { border-bottom: none; }
+.task-icon { font-size: 18px; width: 22px; text-align: center; }
+.task-label { flex: 1; font-size: 13px; }
+.task-btns { display: flex; gap: 6px; }
+
+.sbtn {
+  width: 34px; height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--card2);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-weight: 700;
+}
+.sbtn.sel-maru  { background: rgba(34,197,94,.2);  border-color: var(--green);  color: var(--green); }
+.sbtn.sel-sankaku { background: rgba(245,158,11,.2); border-color: var(--yellow); color: var(--yellow); }
+.sbtn.sel-batsu { background: rgba(239,68,68,.2);  border-color: var(--red);    color: var(--red); }
+
+/* Notes */
+.note-list { list-style: none; }
+.note-item {
+  padding: 5px 0 5px 20px;
+  position: relative;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.note-item { color: #374151; }
+.note-item::before { content: '⚠'; position: absolute; left: 0; color: var(--yellow); }
+
+/* Two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+/* Phase timeline */
+.phase-tl { display: flex; gap: 6px; margin-top: 6px; }
+.ph-block {
+  flex: 1; padding: 8px; border-radius: 8px;
+  text-align: center; font-size: 10px; border: 1px solid transparent;
+}
+.ph-block.p1 { background: #ede9fe; color: #6d28d9; }
+.ph-block.p2 { background: #dbeafe; color: #1d4ed8; }
+.ph-block.p3 { background: #fce7f3; color: #be185d; }
+.ph-block.cur { border-color: currentColor; }
+
+/* Streak badge */
+.streak-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  color: #92400e;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 14px; font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Rec item */
+.rec-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; line-height: 1.6;
+}
+.rec-item:last-child { border-bottom: none; }
+
+/* Calendar */
+.cal-month-label { font-size: 13px; color: var(--muted); font-weight: 700; margin-bottom: 8px; }
+.cal-dow {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  text-align: center; font-size: 11px; color: var(--muted);
+  padding-bottom: 6px; font-weight: 600;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 16px; }
+.cal-day {
+  aspect-ratio: 1; border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; border: 1px solid transparent;
+  font-size: 12px; padding: 2px;
+  transition: all .15s;
+}
+.cal-day.empty { visibility: hidden; }
+.cal-day.inactive { background: #f8fafc; opacity: .4; cursor: default; }
+.cal-day.p1 { background: #ede9fe; }
+.cal-day.p2 { background: #dbeafe; }
+.cal-day.p3 { background: #fce7f3; }
+.cal-day.today { border-color: var(--blue) !important; }
+.cal-day:hover:not(.empty):not(.inactive) { transform: scale(1.08); opacity: .85; }
+.cal-day-num { font-size: 12px; font-weight: 600; line-height: 1; }
+.cal-weight { font-size: 9px; color: var(--green); font-weight: 600; }
+.cal-status { font-size: 10px; line-height: 1; }
+
+/* Legend */
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 11px; height: 11px; border-radius: 3px; }
+
+/* Graph */
+.chart-wrap { position: relative; height: 240px; }
+.chart-wrap-sm { position: relative; height: 170px; }
+
+/* Modal */
+#modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.75);
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-box {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%; max-width: 480px;
+  max-height: 82vh;
+  overflow-y: auto;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>🏃 Diet Tracker</h1>
+    <span id="hbadge" class="hbadge hb-before">--</span>
+  </header>
+  <nav>
+    <button class="tab-btn active" data-tab="dashboard">ダッシュボード</button>
+    <button class="tab-btn" data-tab="calendar">カレンダー</button>
+    <button class="tab-btn" data-tab="graph">グラフ</button>
+  </nav>
+  <div id="dashboard" class="tab-pane active"></div>
+  <div id="calendar"  class="tab-pane"></div>
+  <div id="graph"     class="tab-pane"></div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const CFG = {
+  start: '2026-05-25',
+  end:   '2026-06-20',
+  initial: 71.0,
+  target:  66.0,
+  height:  169,
+};
+
+// ============================================================
+// DATE HELPERS (timezone-safe)
+// ============================================================
+function fmtDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return fmtDate(d);
+}
+function today() { return fmtDate(new Date()); }
+
+function formatDisplay(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const dow = ['日','月','火','水','木','金','土'][d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()}（${dow}）`;
+}
+
+function dateToDay(dateStr) {
+  const s = new Date(CFG.start + 'T00:00:00');
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - s) / 86400000) + 1;
+}
+
+function isInPlan(dateStr) {
+  return dateStr >= CFG.start && dateStr <= CFG.end;
+}
+
+// ============================================================
+// TARGET WEIGHT
+// ============================================================
+function targetWeight(dateStr) {
+  const day = dateToDay(dateStr);
+  if (day <= 1)  return CFG.initial;
+  if (day <= 7)  return +(CFG.initial - (2.5/6)*(day-1)).toFixed(2);
+  if (day <= 20) return +(68.5 - (1.5/13)*(day-7)).toFixed(2);
+  return +(67.0 - (1.0/7)*(day-20)).toFixed(2);
+}
+
+// ============================================================
+// SCHEDULE DATA
+// ============================================================
+const SCHEDULE = {};
+
+const SOUP1 = [
+  { food:'スープ＋果物（バナナ以外）',         run:'ラン 5〜7km（軽め）',      notes:['バナナは禁止','スープは何杯でもOK','水分多めに摂る'] },
+  { food:'スープ＋野菜（焼きポテトOK）',       run:'ラン 5〜7km',              notes:['ドレッシング不可','野菜は制限なし','つらければスープ追加'] },
+  { food:'スープ＋果物＋野菜',                 run:'ラン 5〜7km',              notes:['最もつらい日、無理しない','水を意識的に飲む','あと4日で肉が食べられる'] },
+  { food:'スープ＋バナナ3本＋スキムミルク',    run:'ラン 軽め（体調次第）',     notes:['バナナでエネルギー補給','低脂肪乳・豆乳でもOK','体が楽になる転換点'] },
+  { food:'スープ＋牛赤身肉 or 魚＋トマト',    run:'ラン 5〜7km',              notes:['タンパク質day！','トマトは6個まで','ホエイプロテイン追加OK'] },
+  { food:'スープ＋牛赤身肉＋野菜（炭水化物禁止）', run:'ラン 5〜7km',         notes:['肉は無制限','ホエイプロテイン追加OK','明日でフェーズ1終了'] },
+  { food:'スープ＋玄米＋野菜＋フルーツジュース',   run:'ラン 5〜7km',         notes:['玄米は1杯まで','無糖ジュース推奨','ホエイプロテイン追加OK','フェーズ1お疲れ様！'] },
+];
+
+// Phase 1
+for (let i = 0; i < 7; i++) {
+  const date = addDays(CFG.start, i);
+  const sd = i + 1;
+  const s  = SOUP1[i];
+  const tasks = [
+    { id:'soup', label:'スープ食実施',       icon:'🍲' },
+    { id:'run',  label:s.run,               icon:'🏃' },
+    { id:'water',label:'水 2L以上',          icon:'💧' },
+  ];
+  if (sd >= 5) tasks.push({ id:'whey', label:'ホエイプロテイン', icon:'🥛' });
+  SCHEDULE[date] = {
+    phase: 1, soupDay: sd,
+    title: `スープダイエット① ${sd}日目`,
+    food: s.food, exercise: s.run, meal: null, tasks,
+    notes: s.notes,
+    target: targetWeight(date),
+  };
+}
+
+// Phase 2 helpers
+function p2tasks(wd) {
+  const base = [
+    { id:'meal',  label:'食事管理（高タンパク低脂質）', icon:'🥗' },
+    { id:'eaa',   label:'EAA摂取（運動前後）',         icon:'⚡' },
+    { id:'whey',  label:'ホエイプロテイン（運動後30分）',icon:'🥛' },
+    { id:'soy',   label:'ソイプロテイン（就寝前）',      icon:'🌱' },
+    { id:'water', label:'水 2L以上',                   icon:'💧' },
+  ];
+  if (wd === 6)              return [{ id:'run',   label:'ロングラン 15km',   icon:'🏃' }, ...base];
+  if (wd === 2 || wd === 4)  return [{ id:'train', label:'自重トレ 40〜50分', icon:'💪' }, ...base];
+  return [{ id:'run', label:'ラン 8〜12km', icon:'🏃' }, ...base];
+}
+function p2notes(wd) {
+  const meal = [
+    '朝：ソイプロ＋オートミール or バナナ',
+    '昼：鶏むね肉 or 魚＋野菜＋白米100g',
+    '夜：鶏むね肉 or 豆腐＋野菜（白米なし or 50g）',
+  ];
+  if (wd === 6)             return [...meal,'ロングラン前後の水分・EAAをしっかり','完走優先、ペース不問'];
+  if (wd===2||wd===4)       return [...meal,'自重トレ：スクワット→BLスクワット→プッシュアップ→バーピー→プランク','EAAはトレーニング直前に'];
+  return [...meal,'EAAはラン10分前、ホエイはラン後30分以内','ペースより距離を優先'];
+}
+function p2ex(wd) {
+  if (wd===6)            return 'ロングラン 15km';
+  if (wd===2||wd===4)    return '自重トレ 40〜50分';
+  return 'ラン 8〜12km';
+}
+function p2title(wd, idx) {
+  const label = wd===6?'ロングラン日':wd===2||wd===4?'筋トレ日':'ランニング日';
+  return `高タンパク絞り期 ${idx+1}日目（${label}）`;
+}
+
+// Phase 2
+for (let i = 0; i < 13; i++) {
+  const date = addDays('2026-06-01', i);
+  const wd = new Date(date + 'T00:00:00').getDay();
+  const meal = '朝：ソイプロ＋オートミール / 昼：鶏むね肉+野菜+白米100g / 夜：鶏or豆腐+野菜（白米控えめ）';
+  SCHEDULE[date] = {
+    phase: 2,
+    title: p2title(wd, i),
+    food: '高タンパク・低脂質食',
+    exercise: p2ex(wd),
+    meal, tasks: p2tasks(wd),
+    notes: p2notes(wd),
+    target: targetWeight(date),
+  };
+}
+
+const SOUP3 = [
+  { food:'スープ＋果物（バナナ以外）',              run:'ラン 5km',                 notes:['仕上げスタート！','バナナ禁止','塩分の多い食品を避ける'] },
+  { food:'スープ＋野菜',                           run:'ラン 5km',                 notes:['水分しっかり','むくみが出たら水を増やす','あと5日'] },
+  { food:'スープ＋果物＋野菜',                      run:'ラン 5km',                 notes:['3日目が山場','水をこまめに飲む','あと4日でゴール'] },
+  { food:'スープ＋バナナ3本＋スキムミルク',          run:'ラン 5km（軽め）',          notes:['バナナでエネルギー補充','あと3日','塩分カット継続'] },
+  { food:'スープ＋牛赤身肉 or 魚＋トマト',          run:'軽い有酸素 20〜30分',       notes:['タンパク質で筋量維持','明後日が計測日','塩分を極力カット'] },
+  { food:'スープ＋赤身肉＋野菜（炭水化物禁止）',     run:'完全休息（ストレッチのみ）', notes:['明日が計測日！','運動は禁止','早めに就寝','塩分を徹底カット'] },
+  { food:'スープのみ（計測後は通常食でOK）',         run:'完全休息',                  notes:['起床後すぐ計測！','トイレ後・服なしで測定','目標 66.0kg !!','今日はゆっくり過ごす'] },
+];
+
+// Phase 3
+for (let i = 0; i < 7; i++) {
+  const date = addDays('2026-06-14', i);
+  const sd = i + 1;
+  const s  = SOUP3[i];
+  const tasks = [
+    { id:'soup',  label:'スープ食実施',   icon:'🍲' },
+    { id:'run',   label:s.run,           icon: sd>=6 ? '😴':'🏃' },
+    { id:'water', label:'水 2L以上',      icon:'💧' },
+    { id:'salt',  label:'塩分制限',       icon:'🚫' },
+  ];
+  if (sd >= 5) tasks.push({ id:'whey', label:'ホエイプロテイン', icon:'🥛' });
+  SCHEDULE[date] = {
+    phase: 3, soupDay: sd,
+    title: `スープダイエット② ${sd}日目${sd===7?' 🎯GOAL!':''}`,
+    food: s.food, exercise: s.run, meal: null, tasks,
+    notes: s.notes,
+    target: targetWeight(date),
+  };
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+const SKEY = 'diet-tracker-v1';
+function loadAll() { try { return JSON.parse(localStorage.getItem(SKEY)||'{}'); } catch { return {}; } }
+function saveAll(d) { localStorage.setItem(SKEY, JSON.stringify(d)); }
+function getDayData(date) { const d = loadAll(); return d[date] || { weight: null, tasks: {} }; }
+
+function setWeight(date, w) {
+  const d = loadAll();
+  if (!d[date]) d[date] = { weight: null, tasks: {} };
+  d[date].weight = w;
+  saveAll(d);
+}
+function setTask(date, taskId, val) {
+  const d = loadAll();
+  if (!d[date]) d[date] = { weight: null, tasks: {} };
+  if (!d[date].tasks) d[date].tasks = {};
+  d[date].tasks[taskId] = val;
+  saveAll(d);
+}
+
+// ============================================================
+// CALCULATIONS
+// ============================================================
+function scoreDay(dayData, tasks) {
+  if (!tasks || !tasks.length) return null;
+  let total = 0, count = 0;
+  for (const t of tasks) {
+    const s = (dayData.tasks||{})[t.id];
+    if (s === '○') { total += 1; count++; }
+    else if (s === '△') { total += 0.5; count++; }
+    else if (s === '×') { count++; }
+  }
+  return count > 0 ? total / tasks.length : null;
+}
+
+function calcAchievement() {
+  const data = loadAll();
+  const t = today();
+  let total = 0, count = 0;
+  for (const [date, sched] of Object.entries(SCHEDULE)) {
+    if (date > t) continue;
+    const s = scoreDay(data[date] || { tasks:{} }, sched.tasks);
+    if (s !== null) { total += s; count++; }
+  }
+  return count > 0 ? Math.round(total / count * 100) : 0;
+}
+
+function calcStreak() {
+  const data = loadAll();
+  const t = today();
+  let streak = 0;
+  const dates = Object.keys(SCHEDULE).filter(d => d <= t).sort().reverse();
+  for (const date of dates) {
+    const s = scoreDay(data[date] || { tasks:{} }, SCHEDULE[date].tasks);
+    if (s !== null && s >= 0.8) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function currentWeight() {
+  const data = loadAll();
+  const dates = Object.keys(data)
+    .filter(d => data[d].weight !== null && d <= today())
+    .sort().reverse();
+  return dates.length ? data[dates[0]].weight : null;
+}
+
+function predictFinal() {
+  const data = loadAll();
+  const pts = Object.entries(data)
+    .filter(([d,v]) => v.weight !== null && isInPlan(d))
+    .map(([d,v]) => ({ day: dateToDay(d), w: v.weight }))
+    .sort((a,b) => a.day - b.day);
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  const sx = pts.reduce((a,b)=>a+b.day,0);
+  const sy = pts.reduce((a,b)=>a+b.w,0);
+  const sxy= pts.reduce((a,b)=>a+b.day*b.w,0);
+  const sx2= pts.reduce((a,b)=>a+b.day*b.day,0);
+  const sl = (n*sxy - sx*sy) / (n*sx2 - sx*sx);
+  const ic = (sy - sl*sx) / n;
+  return Math.round((sl * dateToDay(CFG.end) + ic) * 10) / 10;
+}
+
+function getPhase() {
+  const t = today();
+  if (t < CFG.start) return 0;
+  if (t > CFG.end)   return -1;
+  return SCHEDULE[t]?.phase || 0;
+}
+
+function bmi(w) { const h = CFG.height/100; return +(w/(h*h)).toFixed(1); }
+function daysLeft() {
+  const e = new Date(CFG.end + 'T00:00:00');
+  const n = new Date(today() + 'T00:00:00');
+  return Math.max(0, Math.round((e-n)/86400000));
+}
+
+// ============================================================
+// CHART INSTANCES
+// ============================================================
+let wChart = null, aChart = null;
+
+// ============================================================
+// RENDER DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const t = today();
+  const sched = SCHEDULE[t];
+  const dd = getDayData(t);
+  const curW = currentWeight();
+  const ach  = calcAchievement();
+  const str  = calcStreak();
+  const phase= getPhase();
+  const rem  = daysLeft();
+  const pred = predictFinal();
+
+  // Header badge
+  const badge = document.getElementById('hbadge');
+  const badgeMap = { 0:['hb-before','スタート待機'], 1:['hb-p1','フェーズ1 スープ'], 2:['hb-p2','フェーズ2 絞り'], 3:['hb-p3','フェーズ3 仕上げ'], [-1]:['hb-done','COMPLETE!'] };
+  const [bc, bt] = badgeMap[phase] || ['hb-before','--'];
+  badge.className = `hbadge ${bc}`; badge.textContent = bt;
+
+  const lost   = curW ? +(CFG.initial - curW).toFixed(1) : 0;
+  const wprog  = Math.min(100, Math.max(0, Math.round(lost / (CFG.initial - CFG.target) * 100)));
+
+  const el = document.getElementById('dashboard');
+  el.innerHTML = `
+    <div style="margin-bottom:14px;color:var(--muted);font-size:12px;">
+      ${formatDisplay(t)} ${sched ? `｜ Day ${dateToDay(t)} / 27` : t < CFG.start ? '｜ 開始前' : '｜ 終了'}
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">開始体重</div>
+        <div class="stat-val">${CFG.initial}<small style="font-size:13px">kg</small></div>
+        <div class="stat-sub">BMI ${bmi(CFG.initial)}</div>
+      </div>
+      <div class="stat-card" style="border-color:${curW?'rgba(59,130,246,.5)':'var(--border)'}">
+        <div class="stat-label">現在体重</div>
+        <div class="stat-val" style="color:${curW?'#93c5fd':'var(--muted)'}">${curW??'--'}<small style="font-size:13px">kg</small></div>
+        <div class="stat-sub">${curW?`BMI ${bmi(curW)}`:'未入力'}</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(34,197,94,.4)">
+        <div class="stat-label">目標体重</div>
+        <div class="stat-val" style="color:var(--green)">${CFG.target}<small style="font-size:13px">kg</small></div>
+        <div class="stat-sub">BMI ${bmi(CFG.target)}</div>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:13px;font-weight:600;">体重進捗</span>
+        <span style="font-size:14px;color:var(--green);font-weight:700;">${lost}kg 減</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${wprog}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px;flex-wrap:wrap;gap:4px;">
+        <span>あと <strong style="color:var(--text)">${curW?(curW-CFG.target).toFixed(1):5.0}kg</strong></span>
+        <span>残り <strong style="color:var(--text)">${rem}日</strong></span>
+        ${pred!==null?`<span>6/20予測 <strong style="color:${pred<=CFG.target?'var(--green)':'var(--yellow)'}">${pred}kg</strong></span>`:''}
+      </div>
+      ${sched?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">本日目標 <strong style="color:var(--text)">${sched.target.toFixed(1)}kg</strong></div>`:''}
+    </div>
+
+    <!-- Achievement + Streak -->
+    <div class="two-col">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">累計達成率</div>
+        <div style="font-size:30px;font-weight:700;color:${ach>=80?'var(--green)':ach>=50?'var(--yellow)':'var(--red)'}">${ach}<span style="font-size:15px">%</span></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">ストリーク</div>
+        <div class="streak-badge">🔥 ${str}日連続</div>
+      </div>
+    </div>
+
+    <!-- Weight input -->
+    <div class="card">
+      <div class="card-title">今日の体重を入力</div>
+      <div class="wi-row">
+        <input type="number" id="wi" step="0.1" min="40" max="200"
+          placeholder="${curW||'70.0'}" value="${dd.weight??''}" />
+        <span style="color:var(--muted)">kg</span>
+        <button class="btn btn-primary" id="wi-save">保存</button>
+      </div>
+    </div>
+
+    ${sched ? `
+    <!-- Tasks -->
+    <div class="card">
+      <div class="card-title">今日のタスク</div>
+      ${sched.tasks.map(task => {
+        const s = (dd.tasks||{})[task.id];
+        return `
+        <div class="task-row">
+          <span class="task-icon">${task.icon}</span>
+          <span class="task-label">${task.label}</span>
+          <div class="task-btns">
+            <button class="sbtn ${s==='○'?'sel-maru':''}"     data-d="${t}" data-tk="${task.id}" data-v="○">○</button>
+            <button class="sbtn ${s==='△'?'sel-sankaku':''}"  data-d="${t}" data-tk="${task.id}" data-v="△">△</button>
+            <button class="sbtn ${s==='×'?'sel-batsu':''}"    data-d="${t}" data-tk="${task.id}" data-v="×">×</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- Today's schedule -->
+    <div class="card" style="border-color:${sched.phase===1?'rgba(139,92,246,.4)':sched.phase===2?'rgba(59,130,246,.4)':'rgba(236,72,153,.4)'}">
+      <div class="card-title">今日のスケジュール</div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px;">${sched.title}</div>
+      <div style="margin-bottom:8px;"><span style="font-size:11px;color:var(--muted);">🍽 食事</span>
+        <div style="font-size:13px;margin-top:3px;">${sched.food}</div></div>
+      <div style="margin-bottom:8px;"><span style="font-size:11px;color:var(--muted);">🏃 運動</span>
+        <div style="font-size:13px;margin-top:3px;">${sched.exercise}</div></div>
+      ${sched.meal?`<div style="margin-bottom:8px;"><span style="font-size:11px;color:var(--muted);">📋 食事プラン</span>
+        <div style="font-size:12px;margin-top:3px;color:#93c5fd;line-height:1.7;">${sched.meal.replace(/ \/ /g,'<br>')}</div></div>`:''}
+      ${sched.notes.length?`<div><span style="font-size:11px;color:var(--muted);">⚠️ 注意・ポイント</span>
+        <ul class="note-list" style="margin-top:4px;">${sched.notes.map(n=>`<li class="note-item">${n}</li>`).join('')}</ul></div>`:''}
+    </div>
+    ` : `
+    <div class="card" style="text-align:center;color:var(--muted);padding:32px;">
+      ${t < CFG.start ? '⏳ プランは 5/25 から開始です' : '🎉 プラン完了！お疲れ様でした！'}
+    </div>
+    `}
+
+    <!-- Recommendations -->
+    <div class="card">
+      <div class="card-title">推奨事項 &amp; アドバイス</div>
+      ${buildRecs(phase, curW, ach, str, rem, pred)}
+    </div>
+
+    <!-- Phase timeline -->
+    <div class="card">
+      <div class="card-title">フェーズタイムライン</div>
+      <div class="phase-tl">
+        <div class="ph-block p1 ${phase===1?'cur':''}">
+          <div style="font-weight:700;">フェーズ1</div>
+          <div style="margin-top:2px;">5/25〜5/31</div>
+          <div>スープ①</div>
+        </div>
+        <div class="ph-block p2 ${phase===2?'cur':''}">
+          <div style="font-weight:700;">フェーズ2</div>
+          <div style="margin-top:2px;">6/1〜6/13</div>
+          <div>高タンパク絞り</div>
+        </div>
+        <div class="ph-block p3 ${phase===3?'cur':''}">
+          <div style="font-weight:700;">フェーズ3</div>
+          <div style="margin-top:2px;">6/14〜6/20</div>
+          <div>スープ② 仕上げ</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Events
+  document.getElementById('wi-save').onclick = () => {
+    const v = parseFloat(document.getElementById('wi').value);
+    if (!isNaN(v) && v > 30 && v < 250) { setWeight(t, v); renderDashboard(); }
+  };
+  document.querySelectorAll('.sbtn').forEach(btn => {
+    btn.onclick = () => {
+      const cur = getDayData(btn.dataset.d).tasks[btn.dataset.tk];
+      setTask(btn.dataset.d, btn.dataset.tk, cur === btn.dataset.v ? null : btn.dataset.v);
+      renderDashboard();
+    };
+  });
+}
+
+function buildRecs(phase, curW, ach, str, rem, pred) {
+  const recs = [];
+  if (str >= 3) recs.push({ icon:'🔥', text:`${str}日連続達成！この調子を維持しよう`, c:'var(--yellow)' });
+  if (ach < 60 && ach > 0) recs.push({ icon:'⚠️', text:'達成率が低め。特に食事管理とプロテイン摂取を意識して', c:'var(--red)' });
+  if (ach >= 80) recs.push({ icon:'✅', text:'高い達成率！目標達成の可能性が高い', c:'var(--green)' });
+  if (pred !== null && pred > CFG.target + 0.5) recs.push({ icon:'📊', text:`現在ペースだと6/20は約${pred}kgの見込み。カロリー管理を強化して`, c:'var(--red)' });
+  if (pred !== null && pred <= CFG.target) recs.push({ icon:'🎯', text:`予測${pred}kgで目標${CFG.target}kg達成できそう！`, c:'var(--green)' });
+  if (phase===1||phase===3) {
+    recs.push({ icon:'🍲', text:'スープ期：空腹感が強い場合はスープを追加。水は常時飲む', c:'#93c5fd' });
+    recs.push({ icon:'💊', text:'電解質バランスに注意。めまい・倦怠感が強い場合は運動を控える', c:'var(--muted)' });
+  }
+  if (phase===2) {
+    recs.push({ icon:'🌙', text:'就寝30分前のソイプロテインは筋肉維持に効果的', c:'#93c5fd' });
+    recs.push({ icon:'⚡', text:'EAAは運動の10〜15分前が理想のタイミング', c:'#93c5fd' });
+  }
+  if (phase===3 && rem<=7) {
+    recs.push({ icon:'🧂', text:'最終週：醤油・みそ汁・加工食品の塩分を極力カット', c:'var(--yellow)' });
+    recs.push({ icon:'💧', text:'水2L以上でむくみを取る。計測値が改善する', c:'#93c5fd' });
+  }
+  recs.push({ icon:'😴', text:'睡眠7〜8時間確保。成長ホルモン分泌で脂肪燃焼が促進される', c:'var(--muted)' });
+  return recs.slice(0,5).map(r=>
+    `<div class="rec-item"><span style="font-size:16px;line-height:1.4;">${r.icon}</span><span style="color:${r.c}">${r.text}</span></div>`
+  ).join('');
+}
+
+// ============================================================
+// RENDER CALENDAR
+// ============================================================
+function renderCalendar() {
+  const data = loadAll();
+  const el = document.getElementById('calendar');
+  el.innerHTML = `
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(139,92,246,.6)"></div>スープ①</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(59,130,246,.6)"></div>絞り期</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(236,72,153,.6)"></div>スープ②</div>
+      <div class="legend-item">✅ 高達成 &nbsp; 🔶 半達成 &nbsp; ❌ 未達成</div>
+    </div>
+    ${renderMonth(2026, 5, data)}
+    ${renderMonth(2026, 6, data)}
+  `;
+  el.querySelectorAll('.cal-day[data-date]').forEach(d => {
+    d.onclick = () => showDayModal(d.dataset.date);
+  });
+}
+
+function renderMonth(year, month, data) {
+  const mNames = ['','1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const first  = new Date(year, month-1, 1);
+  const last   = new Date(year, month, 0).getDate();
+  const fdow   = first.getDay();
+  const t      = today();
+  let html = `<div class="card"><div class="cal-month-label">${year}年 ${mNames[month]}</div>
+    <div class="cal-dow">
+      <span style="color:#ef4444">日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span style="color:#60a5fa">土</span>
+    </div>
+    <div class="cal-grid">`;
+  for (let i=0;i<fdow;i++) html += `<div class="cal-day empty"></div>`;
+  for (let d=1;d<=last;d++) {
+    const ds = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const sched = SCHEDULE[ds];
+    const inPlan = isInPlan(ds);
+    const dd = data[ds] || { weight:null, tasks:{} };
+    let cls = 'cal-day';
+    if (!inPlan) cls += ' inactive';
+    else if (sched?.phase===1) cls += ' p1';
+    else if (sched?.phase===2) cls += ' p2';
+    else if (sched?.phase===3) cls += ' p3';
+    if (ds===t) cls += ' today';
+    let icon = '';
+    if (inPlan && sched && ds <= t) {
+      const s = scoreDay(dd, sched.tasks);
+      if (s!==null) icon = s>=0.9?'✅':s>=0.5?'🔶':'❌';
+    }
+    const dow = new Date(ds+'T00:00:00').getDay();
+    const dc  = dow===0?'color:#ef4444':dow===6?'color:#60a5fa':'';
+    html += `<div class="${cls}" data-date="${ds}">
+      <div class="cal-day-num" style="${dc}">${d}</div>
+      ${dd.weight?`<div class="cal-weight">${dd.weight}</div>`:''}
+      <div class="cal-status">${icon}</div>
+    </div>`;
+  }
+  return html + `</div></div>`;
+}
+
+function showDayModal(date) {
+  const sched = SCHEDULE[date];
+  if (!sched) return;
+  const dd = getDayData(date);
+  const existing = document.getElementById('modal-overlay');
+  if (existing) existing.remove();
+  const ov = document.createElement('div');
+  ov.id = 'modal-overlay';
+  ov.innerHTML = `
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <strong style="font-size:15px;">${formatDisplay(date)}</strong>
+        <button id="modal-close" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;">✕</button>
+      </div>
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;">${sched.title}</div>
+      <div style="font-size:13px;margin-bottom:6px;"><span style="color:var(--muted)">食事：</span>${sched.food}</div>
+      <div style="font-size:13px;margin-bottom:12px;"><span style="color:var(--muted)">運動：</span>${sched.exercise}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">タスク</div>
+      ${sched.tasks.map(tk => {
+        const s = (dd.tasks||{})[tk.id];
+        const sc = s==='○'?'var(--green)':s==='△'?'var(--yellow)':s==='×'?'var(--red)':'var(--muted)';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+          <span>${tk.icon}</span><span style="flex:1;font-size:13px;">${tk.label}</span>
+          <span style="color:${sc};font-weight:700;">${s||'—'}</span>
+        </div>`;
+      }).join('')}
+      ${dd.weight?`<div style="margin-top:10px;font-size:13px;"><span style="color:var(--muted)">体重：</span><strong>${dd.weight}kg</strong></div>`:''}
+      ${sched.notes.length?`<div style="margin-top:10px;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;">注意点</div>
+        ${sched.notes.map(n=>`<div style="font-size:12px;padding:4px 0;color:#fcd34d;">⚠ ${n}</div>`).join('')}`:''}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);">本日目標体重：<strong style="color:var(--text)">${sched.target.toFixed(1)}kg</strong></div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  document.getElementById('modal-close').onclick = () => ov.remove();
+}
+
+// ============================================================
+// RENDER GRAPH
+// ============================================================
+function renderGraph() {
+  const data = loadAll();
+  const t = today();
+  const allDates = Object.keys(SCHEDULE).sort();
+  const pastDates = allDates.filter(d => d <= t);
+
+  document.getElementById('graph').innerHTML = `
+    <div class="card">
+      <div class="card-title">体重推移グラフ</div>
+      <div class="chart-wrap"><canvas id="w-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">日別タスク達成率</div>
+      <div class="chart-wrap-sm"><canvas id="a-chart"></canvas></div>
+    </div>
+  `;
+
+  const labels    = allDates.map(d => { const dt = new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; });
+  const actuals   = allDates.map(d => (data[d]||{}).weight ?? null);
+  const targets   = allDates.map(d => SCHEDULE[d].target);
+  const phase1bg  = allDates.map(d => SCHEDULE[d].phase===1 ? 'rgba(139,92,246,.08)' : SCHEDULE[d].phase===3 ? 'rgba(236,72,153,.08)' : 'rgba(59,130,246,.08)');
+
+  if (wChart) { wChart.destroy(); wChart = null; }
+  wChart = new Chart(document.getElementById('w-chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'実績体重', data:actuals, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.12)',
+          pointBackgroundColor:'#3b82f6', pointRadius:4, tension:.3, spanGaps:false },
+        { label:'目標体重', data:targets, borderColor:'#22c55e', borderDash:[5,5],
+          pointRadius:0, tension:.3, fill:false },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#475569', font:{size:11}, boxWidth:12 } } },
+      scales:{
+        x:{ ticks:{ color:'#64748b', maxTicksLimit:10, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
+        y:{ min:64, max:72, ticks:{ color:'#64748b', stepSize:1, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
+      }
+    }
+  });
+
+  const achLabels = pastDates.map(d => { const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; });
+  const achVals   = pastDates.map(d => {
+    const s = scoreDay(data[d]||{tasks:{}}, SCHEDULE[d].tasks);
+    return s !== null ? Math.round(s*100) : null;
+  });
+  const achColors = achVals.map(v => v===null?'rgba(51,65,85,.5)':v>=80?'rgba(34,197,94,.7)':v>=50?'rgba(245,158,11,.7)':'rgba(239,68,68,.7)');
+
+  if (aChart) { aChart.destroy(); aChart = null; }
+  if (pastDates.length === 0) return;
+  aChart = new Chart(document.getElementById('a-chart').getContext('2d'), {
+    type:'bar',
+    data:{ labels:achLabels, datasets:[{ label:'達成率', data:achVals, backgroundColor:achColors, borderRadius:3 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{ color:'#64748b', maxTicksLimit:14, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
+        y:{ min:0, max:100, ticks:{ color:'#64748b', stepSize:25, font:{size:10}, callback:v=>v+'%' }, grid:{ color:'rgba(203,213,225,.6)' } },
+      }
+    }
+  });
+}
+
+// ============================================================
+// TABS
+// ============================================================
+const renderFns = { dashboard: renderDashboard, calendar: renderCalendar, graph: renderGraph };
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+    renderFns[btn.dataset.tab]();
+  };
+});
+
+// ============================================================
+// INIT
+// ============================================================
+renderDashboard();
+</script>
+</body>
+</html>
