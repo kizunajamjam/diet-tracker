@@ -875,6 +875,12 @@ function renderGraph() {
   `;
 
   const labels    = allDates.map(d => { const dt = new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; });
+  // 両グラフで同じ日付軸を使う：1日1本の縦線、ラベルは2日おき、Y軸幅を固定して上下の日付位置を揃える
+  const xAxis = { offset:true,
+    ticks:{ color:'#64748b', font:{size:10}, autoSkip:false, maxRotation:50, minRotation:50,
+            callback:(v,i) => i % 2 === 0 ? labels[i] : '' },
+    grid:{ offset:false, color:'rgba(203,213,225,.6)' } };
+  const yWidth = s => { s.width = 40; };
   const actuals   = allDates.map(d => (data[d]||{}).weight ?? null);
   const targets   = allDates.map(d => SCHEDULE[d].target);
   const phase1bg  = allDates.map(d => SCHEDULE[d].phase===1 ? 'rgba(139,92,246,.08)' : SCHEDULE[d].phase===3 ? 'rgba(236,72,153,.08)' : 'rgba(59,130,246,.08)');
@@ -895,14 +901,14 @@ function renderGraph() {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ labels:{ color:'#475569', font:{size:11}, boxWidth:12 } } },
       scales:{
-        x:{ ticks:{ color:'#64748b', maxTicksLimit:10, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
-        y:{ min:64, max:72, ticks:{ color:'#64748b', stepSize:1, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
+        x:xAxis,
+        y:{ min:64, max:72, afterFit:yWidth, ticks:{ color:'#64748b', stepSize:1, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
       }
     }
   });
 
-  const achLabels = pastDates.map(d => { const dt=new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; });
-  const achVals   = pastDates.map(d => {
+  const achVals   = allDates.map(d => {
+    if (d > t) return null;
     const s = scoreDay(data[d]||{tasks:{}}, SCHEDULE[d].tasks);
     return s !== null ? Math.round(s*100) : null;
   });
@@ -912,13 +918,13 @@ function renderGraph() {
   if (pastDates.length === 0) return;
   aChart = new Chart(document.getElementById('a-chart').getContext('2d'), {
     type:'bar',
-    data:{ labels:achLabels, datasets:[{ label:'達成率', data:achVals, backgroundColor:achColors, borderRadius:3 }] },
+    data:{ labels, datasets:[{ label:'達成率', data:achVals, backgroundColor:achColors, borderRadius:3 }] },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ display:false } },
       scales:{
-        x:{ ticks:{ color:'#64748b', maxTicksLimit:14, font:{size:10} }, grid:{ color:'rgba(203,213,225,.6)' } },
-        y:{ min:0, max:100, ticks:{ color:'#64748b', stepSize:25, font:{size:10}, callback:v=>v+'%' }, grid:{ color:'rgba(203,213,225,.6)' } },
+        x:xAxis,
+        y:{ min:0, max:100, afterFit:yWidth, ticks:{ color:'#64748b', stepSize:25, font:{size:10}, callback:v=>v+'%' }, grid:{ color:'rgba(203,213,225,.6)' } },
       }
     }
   });
