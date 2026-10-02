@@ -875,11 +875,11 @@ function renderGraph() {
   `;
 
   const labels    = allDates.map(d => { const dt = new Date(d+'T00:00:00'); return `${dt.getMonth()+1}/${dt.getDate()}`; });
-  // 両グラフで同じ日付軸を使う：1日1本の縦線、ラベルは2日おき、Y軸幅を固定して上下の日付位置を揃える
+  // 両グラフで同じ日付軸を使う：ラベルと縦線は2日おきで同じ日に、Y軸幅を固定して上下の日付位置を揃える
   const xAxis = { offset:true,
     ticks:{ color:'#64748b', font:{size:10}, autoSkip:false, maxRotation:50, minRotation:50,
             callback:(v,i) => i % 2 === 0 ? labels[i] : '' },
-    grid:{ offset:false, color:'rgba(203,213,225,.6)' } };
+    grid:{ offset:false, color:c => c.index % 2 === 0 ? 'rgba(203,213,225,.6)' : 'transparent' } };
   const yWidth = s => { s.width = 40; };
   const actuals   = allDates.map(d => (data[d]||{}).weight ?? null);
   const targets   = allDates.map(d => SCHEDULE[d].target);
